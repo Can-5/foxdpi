@@ -1,8 +1,9 @@
 #!/usr/bin/env sh
-# install.sh — FoxDPI kurulum scripti
+# install.sh — FoxDPI kurulum scripti (şablon aşamasında)
 # Kullanım:
 #   curl -fsSL https://.../install.sh | sh
 #   curl -fsSL https://.../install.sh | sh -s -- --system
+#   curl -fsSL https://.../install.sh | sh -s -- --prefix $HOME/.local
 set -e
 
 PREFIX="${PREFIX:-$HOME/.local}"
@@ -20,7 +21,6 @@ usage() {
   exit 0
 }
 
-# Basit argüman parserı
 SYSTEM=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -41,43 +41,45 @@ else
   STATE_DIR="$PREFIX/share/foxdpi"
 fi
 
-# Gerekli araçlar
 REQUIRED_TOOLS="curl tar grep sed"
 for tool in $REQUIRED_TOOLS; do
   if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "Hata: '$tool' bulunamadı. Lütfen öncelikle kurun." >&2
+    echo "Hata: '$tool' bulunamadı. Kurulumu tamamlamak için öncelikle kurun." >&2
     exit 1
   fi
 done
 
-# Dizinleri oluştur
 for dir in "$BIN_DIR" "$STATE_DIR" "$CACHE_DIR"; do
   $SUDO mkdir -p "$dir"
 done
 
-# FoxDPI ikilisini indir (bu örnekte yerel dosya üzerinden kurulum),
-# gerçek deploymentta GitHub releases / kendi depolarından ~/.cache/foxdpi/altına indirilir.
 echo "==> FoxDPI motorlarını hazırlıyorum…"
 
-# Örnek: foxdpi-bypass ikilisi (Node.js ile çalıştırılabilir, tek dosya).
-# Gerçek buildta bu adım foxdpi-bypass'i derler / pakeder.
-FOXDPI_BYPASS="$STATE_DIR/foxdpi-bypass/index.js"
-$SUDO mkdir -p "$(dirname "$FOXDPI_BYPASS")"
+# foxdpi-bypass (Rust binary veya Node.js şablon wrapper)
+FOXDPI_BYPASS_STATE="$STATE_DIR/foxdpi-bypass"
+$SUDO mkdir -p "$FOXDPI_BYPASS_STATE"
 
-if [ ! -f "$FOXDPI_BYPASS" ]; then
-  # placeholder: gerçek kurulumta bu dosya FoxDPI depolarından indirilir.
-  : > "$FOXDPI_BYPASS"
+if [ ! -f "$FOXDPI_BYPASS_STATE/index.js" ]; then
+  # şablon Node.js dosyasını kopyala (gerçek buildda binary veya dosya indirilecek)
+  if [ -f "foxdpi/bypass/index.js" ]; then
+    $SUDO cp "foxdpi/bypass/index.js" "$FOXDPI_BYPASS_STATE/index.js"
+    $SUDO chmod +x "$FOXDPI_BYPASS_STATE/index.js"
+    echo "==> foxdpi-bypass şablon Node.js dosyası kopylandı"
+  else
+    : > "$FOXDPI_BYPASS_STATE/index.js"
+    echo "==> foxdpi-bypass şablon placeholder oluşturuldu"
+  fi
 fi
 
-# Shim / wrapper: foxdpi-bypass komutunu $BIN_DIR ya koy.
+# foxdpi-bypass wrapper
 WRAPPER="$BIN_DIR/foxdpi-bypass"
 if [ "$SYSTEM" -eq 1 ] || [ -w "$BIN_DIR" ]; then
   cat > "$WRAPPER" <<'WRAPPER_EOF'
 #!/usr/bin/env node
 /**
- * foxdpi-bypass wrapper — FoxDPI'nin kendi DPI bypass motoru
- * Gerçek motor FoxDPI depolarından ~/.share/foxdpi/foxdpi-bypass/index.js veya
- * benzeri bir konumdan yüklenir.
+ * foxdpi-bypass wrapper — FoxDPI'nin kendi DPI bypass motoru (şablon)
+ * Gerçek motor ~/.local/share/foxdpi/foxdpi-bypass/index.js veya
+ * şu andaki buildda ~/.local/share/foxdpi/foxdpi-bypass/ altındaki dosyalar.
  */
 "use strict";
 const path = require("path");
@@ -95,11 +97,10 @@ if (!fs.existsSync(engineFile) && fs.existsSync(path.join(engineDir, "foxdpi-byp
 
 if (!fs.existsSync(engineFile)) {
   console.error("foxdpi-bypass motor dosyası bulunamadı:", engineFile);
-  console.error("Kurulumı tamamlayın veya FOXDPI_ENGINE_DIR'ini doğru ayarlayın.");
+  console.error("Kurulumu tamamlayın veya FOXDPI_ENGINE_DIR'ini doğru ayarlayın.");
   process.exit(1);
 }
 
-// Motoru yükle ve çalıştır
 const engine = require(engineFile);
 if (typeof engine === "function") {
   engine(process.argv.slice(2));
@@ -116,7 +117,7 @@ else
   echo "Uyarı: $BIN_DIR yazılabilir değil, wrapper oluşturulamadı." >&2
 fi
 
-# FoxDPI CLI (Python)
+# FoxDPI CLI (Python) paketi kurulumu
 echo "==> FoxDPI CLI (Python) paketi kuruluyor…"
 if [ -f "$STATE_DIR/foxdpi/foxdpi" ]; then
   CLI_SRC="$STATE_DIR/foxdpi/foxdpi"
@@ -127,16 +128,31 @@ if [ -f "$STATE_DIR/foxdpi/foxdpi" ]; then
   fi
 fi
 
+# şablon sistem proxy ayarları (gerçek implementasyonda GNOME/KDE/XFCE/LXQt)
+SYSTEM_PROXY_CONF="$HOME/.config/foxdpi/90-foxdpi-proxy.conf"
+mkdir -p "$(dirname "$SYSTEM_PROXY_CONF")"
+if [ ! -f "$SYSTEM_PROXY_CONF" ]; then
+  cat > "$SYSTEM_PROXY_CONF" <<'PROXY_EOF'
+# foxdpi-bypass şablon sistem proxy ayarları
+# Bu dosya gerçek implementasyonda GNOME/KDE/XFCE/LXQt proxy/PAC ayarlarını
+# yönetecek. Şu an sadece placeholder.
+export http_proxy="http://127.0.0.1:10850"
+export https_proxy="http://127.0.0.1:10850"
+export all_proxy="socks5://127.0.0.1:10850"
+PROXY_EOF
+  echo "==> şablon sistem proxy dosyası oluşturuldu: $SYSTEM_PROXY_CONF"
+fi
+
 echo "==> Kurulum tamamlandı."
 if [ "$SYSTEM" -eq 1 ]; then
-  echo "Not: sistem genelinde kuruldu. foxdpi-bypass çalıştırmak için sudo gerekebilir."
+  echo "Not: sistem genelinde kuruldu; foxdpi-bypass çalıştırmak için sudo gerekebilir."
 else
-  echo "Not: kullanıcı düzeyinde kuruldu. PATH'e $BIN_DIR eklemeyi unutmayın."
+  echo "Not: kullanıcı düzeyinde kuruldu; PATH'e $BIN_DIR eklemeyi unutmayın."
 fi
 
 echo "Sonraki adımlar:"
 echo "  - foxdpi doctor          # sistem kontrolü"
-echo "  - foxdpi bypass start    # DPI bypass motorunu çalıştır"
+echo "  - foxdpi bypass start    # DPI bypass motorunu çalıştır (şablon)"
 echo "  - foxdpi install <dosya> # paket kur"
 echo "  - foxdpi uninstall      # kurulu paketleri kaldır"
 echo "  - foxdpi --help         # tüm komutlar"

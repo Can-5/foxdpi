@@ -1,0 +1,39 @@
+[package]
+name = "foxdpi-bypass"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "FoxDPI'nin kendi DPI bypass motoru — yerel proxy + ilk-paket biçimlendirme (şablon)."
+readme = "README.md"
+repository = "https://github.com/ilkaycan/foxdpi"
+keywords = ["dpi", "bypass", "proxy", "linux"]
+categories = ["network-programming", "command-line-utilities"]
+
+[[bin]]
+name = "foxdpi-bypass"
+path = "src/bin/foxdpi-bypass.rs"
+
+[dependencies]
+# asenkron runtime
+tokio = { version = "1", features = ["full"] }
+# CLI parsing
+clap = { version = "4", features = ["derive"] }
+# logging/hata raporu (opsiyonel bu aşamada)
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+# TLS/parse için (opsiyonel; gerçek implementasyonda schanel derinleşir)
+# openssl-sys vs rustls kararları burada yapılacak
+# enc-dns/ DoH istekleri için örnekçe bir HTTP istemci
+reqwest = { version = "0.12", default-features = false, features = ["default-tls", "blocking"] }
+#ayar dosyasını okumak/yazmak için basit bir YAML/JSON kütüphanesi
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+dirs = "5"
+once_cell = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
