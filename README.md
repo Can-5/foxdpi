@@ -1,42 +1,51 @@
-# FoxDPI
+## Kendi DPI bypass motorumuz (foxdpi-bypass)
 
-Single-command universal package manager for Linux.
+FoxDPI'nin kendi bypass motoru **foxdpi-bypass**'tır. Şu anki versiyon şablon aşamasında;
+gerçek bypass motoru ayrı bir geliştirme.ekipler tarafından üretilecektir.
 
-## Bash installer (curl-shroud style)
+### Özellikler (tavsiye edilen yol)
 
-```bash
-curl -sSf https://raw.githubusercontent.com/ilkaycan/foxdpi/main/install.sh | sh
-```
+- Yerel bir proxy (SOCKS5/HTTP) üzerinden çalışan, Linux dağıtımlarında
+  (Debian, RPM, Arch, vb.) çalışabilecek küçük bir motor.
+- İlk TCP/TLS ClientHello paketini inceleyip, SNI/Host bilgisini
+  DPI'nin okumasız önce biçimlendirir (record split, segment desync, decoy…).
+- Sistem proxy/PAC ayarlarını yönetir, farklı masaüstleri ve dağıtımlar
+  için uygun ayarlar yapar.
+- Şeffaf, güvenli, denetimli: loglar, doğrulama, kural seti, kullanıcı onayı.
 
-This installs foxdpi for the current user (no sudo by default) into `~/.local/bin` and
-creates a shell alias for convenience.  Use `--system` to install for all users (requires
-sudo).
-
-## Source / pip
-
-```bash
-git clone https://github.com/ilkaycan/foxdpi.git
-cd foxdpi
-pip install -e .
-```
-
-## Supported package formats
-
-- `.deb` (dpkg/apt)
-- `.rpm` (dnf/yum/rpm)
-- `.tar.gz` / `.tar.bz2` / `.tar.zst` / `.zip` (archive extraction with PATH setup)
-- AppImage (make executable + symlink)
-- AUR / Arch build approach (optional helper that inspects PKGBUILD and uses makepkg/yay/paru when available)
-- Custom remote-install pipeline (`foxdpi remote install <url>`) modeled after curl-sh installers
-
-## Quick start
+### Kurulum (install.sh)
 
 ```bash
-foxdpi install ./package.deb               # install local file using distro-aware strategy
-foxdpi install https://example.com/pkg.rpm # remote install with checksum/GPG optional
-foxdpi install appimage https://.../app.AppImage
-foxdpi list                               # show installed foxdpi-managed packages
-foxdpi remove <name>                      # remove a managed package
-foxdpi doctor                            # report OS, package managers, and readiness
-foxdpi run <binary> -- <args>            # run a foxdpi-managed binary (if any) through PATH
+curl -fsSL https://.../install.sh | sh
+curl -fsSL https://.../install.sh | sh -s -- --system
+curl -fsSL https://.../install.sh | sh -s -- --prefix $HOME/.local
 ```
+
+### Kullanım (şablon aşamasında)
+
+```bash
+foxdpi-bypass           # motoru çalıştır (varsayılan mod)
+FOXDPI_BYPASS_MODE=split foxdpi-bypass
+```
+
+### Paket biçimleri
+
+- deb, rpm, appimage, tar.gz, Arch (AUR) ve script (install.sh) ile
+  kurulabilir. Her dağıtım kendi paket yönetimiyle (apt, dnf, pacman, vs.)
+  uyumlu olmalıdır.
+
+### Not
+
+Bu motor şu an **şablon** aşamasında; gerçek bypass teknikleri,
+Linux dağıtımlarına uygun paketleme ve güvenli daemon yönetimi ayrı
+bir geliştirme.ekipleri tarafından tamamlanacaktır.
+
+### Kararlar
+
+- Kendi motorumuzu yazacağız; Shroudly/GoodbyeDPI gibi çalışan ama
+  farklı bir, Linux-dağıtımları-genelinde çalışan ve her dağıtımda
+  kurulabilen motor.
+- Node.js + C yardımcı yazılımlarla (varsa) veya tamamen C/Go ile
+  yazılabilir; şablon阶段ında Node.js ile başlıyoruz.
+- Sistem proxy/PAC ayarlarını yönetecek; Linux dağıtımları için
+  GNOME, KDE, XFCE, LXQt ve diğer masaüstleri desteklenmeli.

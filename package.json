@@ -1,0 +1,15 @@
+{
+  "name": "foxdpi-bypass",
+  "version": "0.1.0",
+  "description": "FoxDPI kendi DPI bypass motoru — yerel proxy + ilk-paket biçimlendirme (şablon阶段).",
+  "type": "module",
+  "license": "MIT",
+  "main": "foxdpi/bypass/index.js",
+  "bin": {
+    "foxdpi-bypass": "foxdpi/bypass/index.js"
+  },
+  "scripts": {
+    "start": "node foxdpi/bypass/index.js",
+    "dev": "node --watch foxdpi/bypass/index.js"
+  }
+}

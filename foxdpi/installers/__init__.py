@@ -76,6 +76,8 @@ def _list_installed() -> list[dict[str, Any]]:
         return data if isinstance(data, list) else []
     except FileNotFoundError:
         return []
+    except Exception:
+        return []
 
 
 def binary_path(name: str) -> str | None:

@@ -14,6 +14,7 @@ from rich.table import Table
 from foxdpi import __version__
 from foxdpi.distro import detect
 from foxdpi.installers import registry as installer_registry
+from foxdpi.installers import installed as _installed_func
 
 
 console = Console()
@@ -126,17 +127,23 @@ def remove_cmd(name: str, quiet: bool, verbose: bool) -> None:
 @_add_common_options
 def list_cmd(quiet: bool, verbose: bool) -> None:
     """FoxDPI tarafından yönetilen paketleri listele."""
-    entries = installer_registry.installed()
+    entries = _installed_func()
     if not entries:
         console.print("[dim]Yönetilen paket yok.[/dim]")
         return
-    table = Table(title="FoxDPI yönetilen paketler", title_style="cyan")
+    table = Table(title="FoxDPI yönetilen paketler", title_style="cyan", show_lines=True)
     table.add_column("İsim", style="cyan")
     table.add_column("Kaynak", style="green")
     table.add_column(" Tür", style="yellow")
     for e in entries:
         table.add_row(e.get("name", ""), e.get("source", ""), e.get("kind", ""))
     console.print(table)
+
+
+@main.command(name="version")
+def version_cmd() -> None:
+    """FoxDPI sürümünü göster."""
+    console.print(f"foxdpi {__version__}")
 
 
 @main.command(name="run")

@@ -10,3 +10,4 @@ from foxdpi.installers.appimage import AppImageInstaller  # noqa: F401
 from foxdpi.installers.remote import RemoteInstaller  # noqa: F401
 from foxdpi.installers.arch import ArchInstaller  # noqa: F401
 from foxdpi.installers.script import ScriptInstaller  # noqa: F401
+from foxdpi.installers import installed  # noqa: F401
