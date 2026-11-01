@@ -1,88 +1,149 @@
+use foxdpi_bypass::{
+    apply_strategy, ClientHelloInfo, Config, DnsResolver, MatchKind, Rule, Strategy, SocksProxy,
+};
 use std::net::SocketAddr;
-use anyhow::Result;
-use clap::Parser;
-use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tracing::{info, warn, error};
 
-/// foxdpi-bypass — kendi DPI bypass motorumuz (şablon)
-#[derive(Parser, Debug)]
-#[command(name = "foxdpi-bypass", about = "FoxDPI'nin kendi DPI bypass motoru (şablon aşamasında)")]
+#[derive(clap::Parser)]
+#[command(name = "foxdpi-bypass", about = "FoxDPI DPI bypass motoru (TLS record split / segment desync / decoy / OOB / host-scramble)")]
 struct Cli {
-    /// Dinlenen port (öntanımlı: 10850)
-    #[arg(short, long, default_value = "10850")]
+    /// SOCKS5 proxy bind port
+    #[arg(long, default_value_t = 1080)]
     port: u16,
 
-    /// Biçimlendirme strateji (şablon: default, split, desync, decoy)
-    #[arg(long, default_value = "default")]
-    mode: String,
+    /// varsayılan bypass stratejisi
+    #[arg(long, value_enum, default_value_t = clap::value_hint::ValueHint::ThatSortsLikeAnEnum)]
+    mode: Option<Strategy>,
 
-    /// Log seviyesi (info, debug, warn, error)
-    #[arg(long, default_value = "info")]
-    log_level: String,
+    /// domain kuralları (tekrarlanabilir)
+    #[arg(long, value_delimiter = ',', num_args = 1..)]
+    rules: Option<Vec<String>>,
 
-    /// Parantezli debug (şablon: istekleri yazdır)
-    #[arg(long, default_value_t = false)]
-    verbose: bool,
+    /// DNS provide sint
+    #[arg(long)]
+    dns_provider: Option<String>,
+
+    /// DNS enkripsiyonu
+    #[arg(long, alias = "dns-encrypted")]
+    dns_encrypted: bool,
+
+    /// ad/resim engelleme listesi (virgülle bazlı)
+    #[arg(long, value_delimiter = ',', num_args = 1..)]
+    block_pages: Option<Vec<String>>,
+
+    /// config.yaml yol
+    #[arg(long, alias = "config")]
+    cfg_path: Option<String>,
+
+    /// ileri düzlem (advanced mode) devreye al
+    #[arg(long, alias = "advanced")]
+    advanced: bool,
+
+    /// SOCKS5 proxy başlat (varsayılan)
+    #[arg(long)]
+    run: bool,
+
+    /// yapılandırmayı göster
+    #[arg(long)]
+    show: bool,
+
+    /// DNS çözümleyiciyi test et (domain argümanı)
+    #[arg(long)]
+    dns_test: Option<String>,
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let cli = Cli::parse();
 
-    // Log seviyesi (taslak)
-    tracing_subscriber::fmt()
-        .with_env_filter(cli.log_level.clone())
-        .init();
+    let mut cfg_path = cli.cfg_path.unwrap_or_else(|| "config.yaml".into());
+    let path: std::path::PathBuf = if cfg_path.is_absolute() {
+        cfg_path.clone().into()
+    } else {
+        let cwd = std::env::current_dir()?;
+        cwd.join(cfg_path)
+    };
 
-    info!("foxdpi-bypass şablon başlatıldı; mode={}", cli.mode);
+    let mut config = Config::load(cfg_path.into())?;
 
-    let addr: SocketAddr = format!("127.0.0.1:{}", cli.port).parse()?;
-    let listener = TcpListener::bind(addr).await?;
-    info!("dinlemede: {}", addr);
-
-    loop {
-        let (mut socket, peer) = listener.accept().await?;
-        info!("yeni bağlantı: {}", peer);
-
-        let mode = cli.mode.clone();
-        let verbose = cli.verbose;
-
-        tokio::spawn(async move {
-            if let Err(e) = handle_connection(&mut socket, peer, &mode, verbose).await {
-                error!("bağlantı hatası ({}): {}", peer, e);
-            }
-        });
+    if let Some(m) = cli.mode {
+        config.mode = m;
     }
+    config.port = cli.port;
+    config.advanced_mode = cli.advanced;
+    config.enabled = true;
+
+    if let Some(ref rp) = cli.rules {
+        let mut rules = Vec::new();
+        for spec in rp {
+            let parts: Vec<&str> = spec.splitn(2, '=').collect();
+            let domain = parts.first().unwrap_or(&"").to_string();
+            if domain.is_empty() {
+                continue;
+            }
+            let strategy = parts
+                .get(1)
+                .and_then(|s| s.parse::<Strategy>().ok())
+                .unwrap_or(Strategy::Default);
+            rules.push(Rule { domain, exempt: false, strategy: Some(strategy) });
+        }
+        config.rules = rules;
+    }
+
+    if let Some(ref prov) = cli.dns_provider {
+        if let Ok(p) = prov.parse::<crate::DnsProvider>() {
+            config.dns.provider = p;
+        }
+    }
+    config.dns.encrypted = cli.dns_encrypted;
+    if let Some(ref pages) = cli.block_pages {
+        config.dns.block_pages = pages.clone();
+    }
+
+    // config kaydet sadece show değilse
+    if !cli.show {
+        let text = serde_yaml::to_string(&config)?;
+        std::fs::write(&path, text)?;
+    }
+
+    if cli.show {
+        println!("{}", serde_yaml::to_string(&config)?);
+        return Ok(());
+    }
+
+    if let Some(domain) = cli.dns_test {
+        let resolver = DnsResolver::new(config.dns.clone());
+        match resolver.resolve(domain).await {
+            Ok(ip) => println!("DNS: {} -> {}", domain, ip),
+            Err(e) => eprintln!("DNS hata: {} -> {}", domain, e),
+        }
+        return Ok(());
+    }
+
+    if !cli.run {
+        println!("FoxDPI bypass motoru hazır. --run ile başlatın.");
+        println!("Port: {}, Mode: {}", config.port, config.mode);
+        return Ok(());
+    }
+
+    println!("FoxDPI bypass başlatılıyor: 127.0.0.1:{}", cli.port);
+    let proxy = SocksProxy::new(config.clone());
+    proxy.run().await?;
+    Ok(())
 }
 
-async fn handle_connection(
-    socket: &mut tokio::net::TcpStream,
-    peer: SocketAddr,
-    mode: &str,
-    verbose: bool,
-) -> Result<()> {
-    // şablon: ilk baytları okup logla, gerçek implementasyonda
-    // ClientHello parse + strateji uygula
-    let mut buf = [0u8; 1024];
-    let n = socket.read(&mut buf).await?;
-    if n == 0 {
-        return Ok(()); // bağlantı kapandı
-    }
+#[test]
+fn test_rule_parse_basic() {
+    let spec = "example.com=record-split";
+    let parts: Vec<&str> = spec.splitn(2, '=').collect();
+    assert_eq!(parts[0], "example.com");
+    let strategy: Strategy = parts[1].parse().unwrap();
+    assert_eq!(strategy, Strategy::RecordSplit);
+}
 
-    if verbose || mode != "default" {
-        warn!("<- {} {} byte (mode={})", peer, n, mode);
-    }
-
-    // bu noktada:
-    // - ilk TLS ClientHello'yı parse et
-    // - SNI/Host pozisyonunu bul
-    // - seçilen stratejiyi uygula (record split, segment desync, decoy, OOB, Host scramble)
-    // - ileri kısımda connect ve forward
-
-    // şablon forward: aynı veriyi geri gönder (dummy)
-    socket.write_all(&buf[..n]).await?;
-    info!("-> {} forward (şablon)", peer);
-
-    Ok(())
+#[test]
+fn test_rule_parse_default() {
+    let spec = "example.com";
+    let parts: Vec<&str> = spec.splitn(2, '=').collect();
+    let strategy: Strategy = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(Strategy::Default);
+    assert_eq!(strategy, Strategy::Default);
 }

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/release-2.0/tooling/api/schema.json",
+  "productName": "FoxDPI",
+  "version": "0.1.0",
+  "identifier": "com.ilkaycan.foxdpi",
+  "build": {
+    "frontendDist": "dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "FoxDPI",
+        "label": "main",
+        "width": 960,
+        "height": 720,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },    "bundle": {
+      "active": true,
+      "targets": [
+        "deb",
+        "rpm",
+        "appimage"
+      ],
+      "category": "Utility",
+      "shortDescription": "FoxDPI — reklam ve izleyici engelleme, DNS over HTTPS, DPI bypass stratejileri ve internet hızlandırma",
+      "longDescription": "FoxDPI — Linux dağıtımlarında çalışan, kendi DPI bypass motoru ile donatılmış grafiksel arayüzlü bir uygulamadır. Reklam ve izleyici engelleme, DNS over HTTPS (DoT/DoH), bypass stratejileri (record split, segment desync, decoy, OOB, host scramble) ve internet hızlandırma seçenekleri sunar. Motor ayrı bir process olarak çalışır; GUI config yönetimi, motor start/stop, engellenen domain/IP listesi ve teknik listesini yönetir. Linux tüm dağıtımlarını (deb, rpm, appimage) destekler; Arch Linux için AUR deposunda da yayınlanır."
+    }
+}

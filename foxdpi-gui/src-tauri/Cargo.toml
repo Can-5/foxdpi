@@ -1,0 +1,34 @@
+[package]
+name = "foxdpi-gui"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "FoxDPI — kendi DPI bypass motorumuzun grafiksel arayüzü (şablon aşamasında)."
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["wry"] }
+tauri-plugin-shell = "2"
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+dirs = "5"
+once_cell = "1"
+reqwest = { version = "0.12", default-features = false, features = ["default-tls"] }
+tokio = { version = "1", features = ["full"] }
+clap = { version = "4", features = ["derive"] }
+serde_path_to_error = "0.1"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+opt-level = 3
+lto = true

@@ -11,5 +11,8 @@
   "scripts": {
     "start": "node foxdpi/bypass/index.js",
     "dev": "node --watch foxdpi/bypass/index.js"
+  },
+  "dependencies": {
+    "zustand": "^5.0.16"
   }
 }

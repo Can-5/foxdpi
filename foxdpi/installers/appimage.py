@@ -45,11 +45,21 @@ class AppImageInstaller(InstallerBase):
             bin_link = os.path.join(os.path.expanduser("~/.local/bin"), name)
             if os.path.islink(bin_link):
                 os.unlink(bin_link)
+            # AppImage dizinini de sil
+            app_dir = os.path.expanduser(f"~/.local/share/foxdpi/appimages/{name}")
+            if os.path.isdir(app_dir):
+                shutil.rmtree(app_dir, ignore_errors=True)
         _manifest_write([e for e in current if e.get("name") != name])
         if verbose:
             print(f"[appimage] kaldırıldı: {name}")
 
     def binary_path(self, name: str) -> str | None:
+        # AppImage'ler direkt çalıştırılabilir; önce app_dir'den bul, yoksa symlink
+        app_dir = os.path.expanduser(f"~/.local/share/foxdpi/appimages/{name}")
+        if os.path.isdir(app_dir):
+            for f in os.listdir(app_dir):
+                if os.access(os.path.join(app_dir, f), os.X_OK):
+                    return os.path.join(app_dir, f)
         link = os.path.join(os.path.expanduser("~/.local/bin"), name)
         return link if os.path.exists(link) else None
 

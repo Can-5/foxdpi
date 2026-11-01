@@ -18,10 +18,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: System :: Systems Administration",
+    "Topic :: System :: Networking",
 ]
 dependencies = [
     "click>=8",
     "rich>=13",
+    "pyyaml>=6",
     "pygobj>=3",           # GLib/etc. discovery where available (soft)
 ]
 
@@ -34,6 +36,10 @@ dev = [
 
 [project.scripts]
 foxdpi = "foxdpi.cli:main"
+foxdpi-bypass = "foxdpi.bypass_cmd:bypass_cmd"
+
+[tool.setuptools.packages.find]
+include = ["foxdpi*"]
 
 [tool.setuptools.packages.find]
 include = ["foxdpi*"]
