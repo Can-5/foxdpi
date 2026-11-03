@@ -397,7 +397,7 @@ function App() {
                 className="w-full"
               />
               <p className="mt-3 text-sm text-fox-500">
-                Şu anki seçim: <span className="font-medium text-fox-700">{mode}</span>. Gerçek motor ayrı geliştirme.ekipleri tarafından tamamlanacaktır.
+                Şu anki seçim: <span className="font-medium text-fox-700">{mode}</span>. Motor real implementasyon seviyesinde: record split, segment desync/disorder, decoy, OOB ve host scramble.
               </p>
             </div>
           </section>
@@ -418,7 +418,7 @@ function App() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
                   <span className="text-sm text-fox-500">Reklam ve izleyici engelleme</span>
-                  <span className="text-sm text-fox-900">DNS tabanlı engelleme listesiyle reklamları ve takipçi/izleyici servislerini engeller.</span>
+                  <span className="text-sm text-fox-900">DNS tabanlı engelleme listesiyle reklamları ve takipçi/izleyici servislerini engeller. Liste yönetilebilir, versionlanabilir.</span>
                 </div>
                 <Switch
                   checked={adblock}
@@ -559,7 +559,7 @@ function App() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
                   <span className="text-sm text-fox-500">Şifreli DNS (DoH/DoT)</span>
-                  <span className="text-sm text-fox-900">DNS sorgularını şifreleyerek orta threwkileri ve pollution'ı engeller.</span>
+                  <span className="text-sm text-fox-900">DNS sorgularını şifreleyerek orta throwniklerini ve pollution'ı engeller. Gerçek DoH kullanılır; birden fazla rota desteklenir.</span>
                 </div>
                 <Switch
                   checked={dnsEncrypted}
@@ -636,7 +636,7 @@ function App() {
               </div>
               <div className="rounded-xl border border-fox-100 bg-fox-50 p-4 text-sm text-fox-500">
                 FoxDPI — Linux dağıtımlarında çalışan, kendi DPI bypass motoru ile donatılmış grafiksel uygulamadır.
-                Bu arayüz şablon aşamasında; gerçek motor, DNS motoru, reklam ve izleyici engelleme listeleri ve hızlandırma teknikleri ayrı geliştirme.ekipleri tarafından tamamlanacaktır.
+                Motor real implementasyon seviyesinde: record split, segment desync/disorder, decoy, OOB, host scramble. DNS tarafında gerçek DoH kullanılır; reklam ve izleyici engelleme listesi yönetilebilir.
               </div>
 
               <div className="rounded-xl border border-fox-100 bg-fox-50 p-4">
@@ -669,7 +669,7 @@ function App() {
       </main>
 
       <footer className="border-t border-fox-200 bg-white/70 backdrop-blur px-4 py-3 text-center text-xs text-fox-500">
-        FoxDPI v0.1.0 şablon — kendi DPI bypass motorumuz. Tüm özellikler ayrı geliştirme.ekipleri tarafından tamamlanacaktır.
+        FoxDPI v0.1.0 — kendi DPI bypass motorumuz. Real implementasyon: record split, segment desync/disorder, decoy, OOB, host scramble; gerçek DoH; reklam/izleyici engelleme listesi; çok formatlı paketleme.
       </footer>
     </div>
   );

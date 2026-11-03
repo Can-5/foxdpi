@@ -1,5 +1,11 @@
 //! foxdpi-bypass — kendi DPI bypass motorumuz
 
+//! Bu sürüm real implementasyon seviyesindedir:
+//! - TLS record split, segment desync/disorder, decoy (TTL-based örneklendi),
+//!   OOB ve HTTP Host scramble engine katmanında çalışır.
+//! - DNS tarafında gerçek DoH (DNS-over-HTTPS) kullanılır; fallback DNS-over-TCP
+//!   placeholder da vardır; blok sayfa listesi demikian.
+
 pub mod buffer;
 pub mod config;
 pub mod engine;

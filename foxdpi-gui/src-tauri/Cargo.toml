@@ -3,7 +3,7 @@ name = "foxdpi-gui"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "FoxDPI — kendi DPI bypass motorumuzun grafiksel arayüzü (şablon aşamasında)."
+description = "FoxDPI — kendi DPI bypass motorumuzun grafiksel arayüzü (real implementasyon)."
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

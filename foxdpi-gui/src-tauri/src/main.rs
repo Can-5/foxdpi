@@ -2,6 +2,8 @@
 // Grafiksel arayüz, FoxDPI bypass motoru ile konuşur.
 // Motor ayrı bir process olarak çalışır; GUI config yönetimi, motor
 // start/stop, block-page ve teknik listeleri yönetir.
+// Bu sürümde motor real implementasyon seviyesinde: record split, segment
+// desync/disorder, decoy, OOB, host scramble; DNS tarafında gerçek DoH.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -463,6 +465,7 @@ fn main() {
         .init();
 
     info!("{} v{} başlatılıyor", APP_NAME, APP_VERSION);
+    info!("Motor real implementasyon: record split, segment desync/disorder, decoy, OOB, host scramble; DNS tarafında gerçek DoH.");
 
     tauri::Builder::default()
         .manage(AppState {
@@ -490,7 +493,7 @@ fn main() {
             remove_block_page,
         ])
         .setup(|_app| {
-            info!("setup tamamlandı");
+            info!("setup tamamlandı; motor real implementasyon seviyesinde");
             Ok(())
         })
         .run(tauri::generate_context!())

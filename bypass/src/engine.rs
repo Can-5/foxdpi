@@ -176,8 +176,14 @@ fn parse_http_host(buf: &[u8]) -> ClientHelloInfo {
     }
 }
 
-/// Segment desync/disorder: baytları chunk'lara böler.
+/// Manage january altında parçaları yeniden derler; gerçek zamanlı çoğaltma yerine,
+/// ilkel yeniden sıralama/disorder mantığını örnekler.
 pub fn apply_segment_desync(original: &[u8], chunk_sizes: &[usize]) -> Vec<Vec<u8>> {
+    let chunks = split_into_chunks(original, chunk_sizes);
+    disorder_chunks(chunks)
+}
+
+fn split_into_chunks(original: &[u8], chunk_sizes: &[usize]) -> Vec<Vec<u8>> {
     let mut chunks = Vec::new();
     let mut offset = 0;
     for &size in chunk_sizes {
@@ -194,7 +200,26 @@ pub fn apply_segment_desync(original: &[u8], chunk_sizes: &[usize]) -> Vec<Vec<u
     chunks
 }
 
-/// HTTP Host scramble: Host başlığının case'ini değiştirir.
+fn disorder_chunks(mut chunks: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    if chunks.len() <= 1 {
+        return chunks;
+    }
+    // deterministic disorder pattern: rotate chunks by a fixed offset
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut h = DefaultHasher::new();
+    chunks.len().hash(&mut h);
+    let rotate_by = h.finish() as usize % chunks.len();
+    if rotate_by == 0 {
+        return chunks;
+    }
+    let mut out = Vec::with_capacity(chunks.len());
+    out.extend_from_slice(&chunks[rotate_by..]);
+    out.extend_from_slice(&chunks[..rotate_by]);
+    out
+}
+
+/// HTTP Host scramble: Host başlığının case'ini değiştirir + delimiter varyasyonları.
 pub fn apply_host_scramble(buf: &[u8]) -> Vec<u8> {
     let mut out = buf.to_vec();
     if let Some(pos) = out.windows(5).position(|w| w == b"Host:") {
@@ -204,12 +229,17 @@ pub fn apply_host_scramble(buf: &[u8]) -> Vec<u8> {
             .position(|&b| b == b'\r' || b == b'\n')
             .map(|p| start + p)
             .unwrap_or(out.len());
+        // case flip within the host value
         for b in &mut out[start..end] {
             if *b >= b'a' && *b <= b'z' {
                 *b -= 32;
             } else if *b >= b'A' && *b <= b'Z' {
                 *b += 32;
             }
+        }
+        // delimiter perturbation: inject an extra space if room and no CRLF conflict
+        if end < out.len() && out[end] == b'\r' && out.len() > end + 1 && out[end + 1] == b'\n' {
+            out.insert(end, b' ');
         }
     }
     out
@@ -220,6 +250,7 @@ pub struct StrategyResult {
     pub parts: Vec<Vec<u8>>,
     pub decoy_needed: bool,
     pub oob_byte: Option<u8>,
+    pub ttl_override: Option<u8>,
 }
 
 /// Strateji uygulanmış, forward edilecek parçaları döndürür.
@@ -239,6 +270,7 @@ pub fn apply_strategy(
             parts: vec![original.to_vec()],
             decoy_needed: false,
             oob_byte: None,
+            ttl_override: None,
         },
         Strategy::RecordSplit => {
             let split_point = info.sni_offset.unwrap_or_else(|| original.len() / 2);
@@ -249,6 +281,7 @@ pub fn apply_strategy(
                 parts,
                 decoy_needed: false,
                 oob_byte: None,
+                ttl_override: Some(60),
             }
         }
         Strategy::SegmentDesync => {
@@ -262,6 +295,7 @@ pub fn apply_strategy(
                 parts,
                 decoy_needed: false,
                 oob_byte: None,
+                ttl_override: Some(64),
             }
         }
         Strategy::Decoy => StrategyResult {
@@ -269,6 +303,7 @@ pub fn apply_strategy(
             parts: vec![original.to_vec()],
             decoy_needed: true,
             oob_byte: None,
+            ttl_override: Some(120),
         },
         Strategy::OOB => {
             let oob_byte = original.first().copied();
@@ -283,20 +318,17 @@ pub fn apply_strategy(
                 parts,
                 decoy_needed: false,
                 oob_byte,
+                ttl_override: None,
             }
         }
         Strategy::HostScramble => {
-            let modified = if original.iter().any(|&b| b.is_ascii_graphic() || b == b'\r' || b == b'\n') {
-                let scrambled = apply_host_scramble(original);
-                vec![scrambled]
-            } else {
-                vec![original.to_vec()]
-            };
+            let scrambled = apply_host_scramble(original);
             StrategyResult {
                 mode: effective,
-                parts: modified,
+                parts: vec![scrambled],
                 decoy_needed: false,
                 oob_byte: None,
+                ttl_override: None,
             }
         }
     }

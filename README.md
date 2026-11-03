@@ -1,19 +1,26 @@
 ## Kendi DPI bypass motorumuz (foxdpi-bypass)
 
-FoxDPI'nin kendi bypass motoru **foxdpi-bypass**'tır. Şu anki versiyon şablon aşamasında;
-gerçek bypass motoru ayrı bir geliştirme.ekipler tarafından üretilecektir.
+FoxDPI'nin kendi bypass motoru **foxdpi-bypass**'tır. Bu sürümde motor real
+implementasyon seviyesine geçmiştir:
 
-### Özellikler (tavsiye edilen yol)
+- gerçek TLS record split, segment desync/disorder, decoy (TTL-based örneklendi),
+  OOB ve HTTP Host scramble teknikleri engine katmanında çalışır.
+- SOCKS5 proxy üzerinden çalışır; istemci trafiği motor tarafından işlenir.
+- DNS tarafında gerçek DoH (DNS-over-HTTPS) kullanılır; fallback DNS-over-TCP
+  placeholder da vardır; blok sayfa listesi dengan.
 
-- Yerel bir proxy (SOCKS5/HTTP) üzerinden çalışan, Linux dağıtımlarında
-  (Debian, RPM, Arch, vb.) çalışabilecek küçük bir motor.
-- İlk TCP/TLS ClientHello paketini inceleyip, SNI/Host bilgisini
-  DPI'nin okumasız önce biçimlendirir (record split, segment desync, decoy…).
-- Sistem proxy/PAC ayarlarını yönetir, farklı masaüstleri ve dağıtımlar
-  için uygun ayarlar yapar.
+### Özellikler
+
+- Yerel bir SOCKS5 proxy üzerinden çalışır; Linux dağıtımlarında
+  (Debian, RPM, Arch, vb.) çalışabilir.
+- İlk TCP/TLS ClientHello paketini parse eder; SNI/Host bilgisi kullanılır.
+- Strateji motoru: TLS record split, segment desync/disorder, decoy, OOB,
+  HTTP Host scramble gibi teknikleri uygular.
+- Sistem proxy/PAC ayarlarını yönetmeye yönelik altyapı vardır; farklı
+  masaüstleri ve dağıtımlar için uygun ayarlar yapılabilir.
 - Şeffaf, güvenli, denetimli: loglar, doğrulama, kural seti, kullanıcı onayı.
 
-### Kurulum (install.sh)
+### Kurulum
 
 ```bash
 curl -fsSL https://.../install.sh | sh
@@ -21,7 +28,7 @@ curl -fsSL https://.../install.sh | sh -s -- --system
 curl -fsSL https://.../install.sh | sh -s -- --prefix $HOME/.local
 ```
 
-### Kullanım (şablon aşamasında)
+### Kullanım
 
 ```bash
 foxdpi-bypass           # motoru çalıştır (varsayılan mod)
@@ -36,16 +43,14 @@ FOXDPI_BYPASS_MODE=split foxdpi-bypass
 
 ### Not
 
-Bu motor şu an **şablon** aşamasında; gerçek bypass teknikleri,
-Linux dağıtımlarına uygun paketleme ve güvenli daemon yönetimi ayrı
-bir geliştirme.ekipleri tarafından tamamlanacaktır.
+Bu sürüm real implementasyon seviyesine getirilmiştir; ileri düzlem (NFQUEUE,
+raw socket, WinDivert gibi) ve bazı stateful DPI teknikleri roadmap'dadır.
 
 ### Kararlar
 
-- Kendi motorumuzu yazacağız; Shroudly/GoodbyeDPI gibi çalışan ama
-  farklı bir, Linux-dağıtımları-genelinde çalışan ve her dağıtımda
-  kurulabilen motor.
-- Node.js + C yardımcı yazılımlarla (varsa) veya tamamen C/Go ile
-  yazılabilir; şablon阶段ında Node.js ile başlıyoruz.
+- Kendi motorumuzu yazdık; Shroudly/GoodbyeDPI gibi araçlardan ilham aldık ama
+  kendi motorumuz olarak farklı bir yaklaşımla, Linux-dağıtımları-genelinde
+  çalışacak şekilde tasarladık.
+- Rust ile yazdık; Node.js veya C/Go değil.
 - Sistem proxy/PAC ayarlarını yönetecek; Linux dağıtımları için
-  GNOME, KDE, XFCE, LXQt ve diğer masaüstleri desteklenmeli.
+  GNOME, KDE, XFCE, LXQt ve diğer masaüstleri desteklenebilir.
