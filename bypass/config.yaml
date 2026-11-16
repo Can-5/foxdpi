@@ -1,0 +1,15 @@
+# foxdpi-bypass varsayılan yapılandırma (şablon)
+# Gerçek kullanımda foxdpi doctor / foxdpi bypass configure ile üretilir.
+
+port: 10850
+mode: default
+verbose: false
+
+dns:
+  provider: built_in
+  custom_servers: []
+  encrypted: true
+  block_ads: false
+  block_pages: []
+
+rules: []

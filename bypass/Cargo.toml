@@ -1,0 +1,31 @@
+[package]
+name = "foxdpi-bypass"
+version = "0.3.0"
+edition = "2021"
+license = "MIT"
+description = "FoxDPI'nin kendi DPI bypass motoru — yerel SOCKS5 proxy + TLS ClientHello biçimlendirme."
+readme = "README.md"
+repository = "https://github.com/ilkaycan/foxdpi"
+keywords = ["dpi", "bypass", "proxy", "linux"]
+categories = ["network-programming", "command-line-utilities"]
+
+[[bin]]
+name = "foxdpi-bypass"
+path = "src/bin/foxdpi-bypass.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+clap = { version = "4", features = ["derive"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+libc = "0.2"
+rustls = { version = "0.23", default-features = false, features = ["ring", "tls12", "std"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
+webpki-roots = "0.26"
+
+[profile.release]
+opt-level = 3
+lto = true

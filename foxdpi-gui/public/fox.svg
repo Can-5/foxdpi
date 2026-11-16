@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- FoxDPI logo şablonu -->
+  <circle cx="32" cy="32" r="30" fill="#3b6ef0" />
+  <path d="M20 28 L27 20 L34 27 L29 34 L36 34 L30 42 L38 42 L33 50 L28 42 L22 42 L26 34 L20 34 Z" fill="#fff" />
+</svg>

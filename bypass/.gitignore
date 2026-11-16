@@ -1,0 +1,8 @@
+# Rustbuild
+target/
+
+# Optional, but recommended
+Cargo.lock
+
+# Debug symbols
+*.pdb
